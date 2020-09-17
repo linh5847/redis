@@ -1,0 +1,16 @@
+[Unit]
+Description=Redis persistent key-value database
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/redis-server /etc/redis/cluster/{{ slave_port }}/redis_{{ slave_port }}.conf --supervised systemd
+ExecStop=/bin/redis-cli -h 127.0.0.1 -p {{ slave_port }} shutdown
+Type=notify
+User=redis
+Group=root
+RuntimeDirectory=/etc/redis/cluster/{{ slave_port }}
+RuntimeDirectoryMode=0755
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

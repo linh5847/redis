@@ -1,0 +1,8 @@
+---
+- name: Setting up Redis Cluster
+  hosts: all
+  remote_user: vagrant
+  become: true
+
+  roles:
+    - { role: redis_cluster, tags: redis_cluster }

@@ -1,0 +1,8 @@
+port {{ slave_port }}
+dir {{ slave_dir }}
+appendonly {{ appendonly }}
+protected-mode {{ protected_mode }}
+cluster-enabled {{ cluster_enabled }}
+cluster-node-timeout {{ cluster_node_timeout }}
+cluster-config-file /etc/redis/cluster/{{ slave_port }}/nodes_{{ slave_port }}.conf
+pidfile {{ slave_pidfile }}

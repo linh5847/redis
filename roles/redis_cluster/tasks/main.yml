@@ -1,0 +1,5 @@
+---
+# tasks file for redis_cluster
+- name: Calling redis.yml
+  include_tasks: redis.yml
+  when: ansible_os_family == 'RedHat' or ansible_distribution == 'CentOS'

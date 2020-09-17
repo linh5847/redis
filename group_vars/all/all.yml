@@ -1,0 +1,25 @@
+---
+redis_software: "redis_software"
+redis_version: "6.0.8"
+owner: "root"
+group: "root"
+dmode: "755"
+fmode: "644"
+dstate: "directory"
+state: "present"
+user_owner: "redis"
+user_group: "redis"
+
+# Redis Master
+master_port: "7000"
+master_dir: "/var/lib/redis/7000"
+appendonly: "yes"
+protected_mode: "no"
+cluster_enabled: "yes"
+cluster_node_timeout: "5000"
+master_pidfile: "/var/run/redis_7000.pid"
+
+# Redis Slave
+slave_port: "7001"
+slave_dir: "/var/lib/redis/7001"
+slave_pidfile: "/var/run/redis_7001.pid"
