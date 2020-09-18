@@ -158,9 +158,11 @@
   register: node1ip
   args:
     executable: /bin/bash
+  when: inventory_hostname in groups['redis_node1']
 
 - debug:
     msg: "{{ node1ip.stdout }}"
+  when: inventory_hostname in groups['redis_node1']
 
 - name: Get Redis node1 IP address.
   shell: >
@@ -168,6 +170,7 @@
   register: node2ip
   args:
     executable: /bin/bash
+  when: inventory_hostname in groups['redis_node2']
 
 - debug:
     msg: "{{ node2ip.stdout }}"
@@ -178,9 +181,11 @@
   register: node3ip
   args:
     executable: /bin/bash
+  when: inventory_hostname in groups['redis_node3']
 
 - debug:
     msg: "{{ node3ip.stdout }}"
+  when: inventory_hostname in groups['redis_node3']
 
 - name: Create Redis cluster.
   shell: >
