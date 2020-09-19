@@ -34,7 +34,7 @@ Vagrant.configure("2") do |config|
           }
 
           ansible.groups = {
-            "redis_node1" => ["redis1"]
+            "redis_node1" => ["redis1"],
             "redis_node2" => ["redis2"], 
             "redis_node3" => ["redis3"]
           }

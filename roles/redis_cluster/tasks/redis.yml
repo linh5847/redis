@@ -164,7 +164,7 @@
     msg: "{{ node1ip.stdout }}"
   when: inventory_hostname in groups['redis_node1']
 
-- name: Get Redis node1 IP address.
+- name: Get Redis node2 IP address.
   shell: >
     echo "{{ ansible_all_ipv4_addresses[1] }}"
   register: node2ip
@@ -175,7 +175,7 @@
 - debug:
     msg: "{{ node2ip.stdout }}"
 
-- name: Get Redis node1 IP address.
+- name: Get Redis node3 IP address.
   shell: >
     echo "{{ ansible_all_ipv4_addresses[1] }}"
   register: node3ip
