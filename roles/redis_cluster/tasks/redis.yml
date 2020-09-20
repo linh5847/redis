@@ -153,43 +153,54 @@
     state: started
 
 - name: Get Redis node1 IP address.
-  shell: >
-    echo "{{ ansible_all_ipv4_addresses[1] }}"
-  register: node1ip
-  args:
-    executable: /bin/bash
-  when: inventory_hostname in groups['redis_node1']
-
-- debug:
-    msg: "{{ node1ip.stdout }}"
+  local_action: "copy content='node1ip: {{ ansible_all_ipv4_addresses[1] }}' dest=file/node1ip"
+  delegate_to: localhost
   when: inventory_hostname in groups['redis_node1']
 
 - name: Get Redis node2 IP address.
-  shell: >
-    echo "{{ ansible_all_ipv4_addresses[1] }}"
-  register: node2ip
-  args:
-    executable: /bin/bash
+  local_action: "copy content='node2ip: {{ ansible_all_ipv4_addresses[1] }}' dest=file/node2ip"
+  delegate_to: localhost
   when: inventory_hostname in groups['redis_node2']
 
-- debug:
-    msg: "{{ node2ip.stdout }}"
-
 - name: Get Redis node3 IP address.
-  shell: >
-    echo "{{ ansible_all_ipv4_addresses[1] }}"
-  register: node3ip
-  args:
-    executable: /bin/bash
+  local_action: "copy content='node3ip: {{ ansible_all_ipv4_addresses[1] }}' dest=file/node3ip"
+  delegate_to: localhost
   when: inventory_hostname in groups['redis_node3']
 
-- debug:
-    msg: "{{ node3ip.stdout }}"
-  when: inventory_hostname in groups['redis_node3']
+- merge info in a variable file.
+  assemble:
+    src: file
+    dest: "myip"
+    mode: "{{ fmode }}"
+  delegate_to: localhost
+
+- name: Deploy output ip address of each to variable file.
+  copy:
+    src: "myip"
+    dest: "roles/redis_cluster/defaults/main.yml"
+    owner: "{{ lookup('env', 'USER') }}"
+    group: "{{ lookup('env', 'USER') }}"
+    mode: "{{ fmode }}"
+  delegate_to: localhost
+
+- name: cleanUp temp variable.
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "myip"
+    - file/node1ip
+    - file/node2ip
+    - file/node3ip
+  delegate_to: localhost
 
 - name: Create Redis cluster.
   shell: >
-    redis-cli --cluster create "{{ node1ip.stdout }}:{{ master_port }}" "{{ node2ip.stdout }}:{{ master_port }}" "{{ node3ip.stdout }}:{{ master_port }}" "{{ node1ip.stdout }}:{{ slave_port }}" "{{ node2ip.stdout }}:{{ slave_port }}" "{{ node3ip.stdout }}:{{ slave_port }}" --cluster-replicas 1 > redis_cluster.log
+    redis-cli --cluster create "{{ node1ip }}:{{ master_port }}" "{{ node2ip }}:{{ master_port }}" "{{ node3ip }}:{{ master_port }}" "{{ node1ip }}:{{ slave_port }}" "{{ node2ip }}:{{ slave_port }}" "{{ node3ip }}:{{ slave_port }}" --cluster-replicas 1 > redis_cluster.log
+  register: redis_cluster
   args:
     executable: /bin/bash
     creates: redis_cluster.log
+
+- debug:
+    msg: "{{ redis_cluster.stdout }}"
