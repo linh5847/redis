@@ -167,7 +167,7 @@
   delegate_to: localhost
   when: inventory_hostname in groups['redis_node3']
 
-- merge info in a variable file.
+- name: merge info in a variable file.
   assemble:
     src: file
     dest: "myip"
