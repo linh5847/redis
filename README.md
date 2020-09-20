@@ -29,6 +29,8 @@ Install Ansible
 
 I'm using VirtualBox 6, Vagrant 2.2.9, Python 3.6 and Ansible 2.9 for developing and test the Redis cluster.
 
+need 3 machine with at least 2 cpus and 4GB of RAM for each to tested it properly.
+
 Methods:
 
 Clone the redis git repo from my GitHub account as follows:-
@@ -41,4 +43,4 @@ vagrant status
 
 vagrant up
 
-I strongly suggestion to use MAC or Linux Laptop instead of Windows.
+I strongly suggestion to use Linux ansible and vagrant host machine. This Ansible playbook is testing with Linux only. No MAC or Windows host machine have had been tested.

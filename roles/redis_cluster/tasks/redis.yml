@@ -37,6 +37,71 @@
   command: "sysctl --system"
   run_once: true
 
+- name: Change hostname on node1.
+  shell: >
+    hostnamectl set-hostname "{{ ansible_hostname }}a.{{ ansible_domain }}" > node1.log
+  args:
+    executable: /bin/bash
+    creates: node1.log
+  when: inventory_hostname in groups['redis_node1']
+    
+- name: Change hostname node2.
+  shell: >
+    hostnamectl set-hostname "{{ ansible_hostname }}b.{{ ansible_domain }}" > node2.log
+  args:
+    executable: /bin/bash
+    creates: node2.log
+  when: inventory_hostname in groups['redis_node2']
+
+- name: Change hostname node3.
+  shell: >
+    hostnamectl set-hostname "{{ ansible_hostname }}c.{{ ansible_domain }}" > node3.log
+  args:
+    executable: /bin/bash
+    creates: node3.log
+  when: inventory_hostname in groups['redis_node3']
+
+- name: Get Redis node1 IP address.
+  local_action: "copy content='{{ ansible_all_ipv4_addresses[1] }}   {{ ansible_hostname }}a.{{ ansible_domain }}' dest=hfile/node1ip"
+  delegate_to: localhost
+  when: inventory_hostname in groups['redis_node1']
+
+- name: Get Redis node2 IP address.
+  local_action: "copy content='{{ ansible_all_ipv4_addresses[1] }}   {{ ansible_hostname }}b.{{ ansible_domain }}' dest=hfile/node2ip"
+  delegate_to: localhost
+  when: inventory_hostname in groups['redis_node2']
+
+- name: Get Redis node3 IP address.
+  local_action: "copy content='{{ ansible_all_ipv4_addresses[1] }}   {{ ansible_hostname }}c.{{ ansible_domain }}' dest=hfile/node3ip"
+  delegate_to: localhost
+  when: inventory_hostname in groups['redis_node3']
+
+- name: merge host file.
+  assemble:
+    src: hfile
+    dest: "myhost"
+    mode: "{{ fmode }}"
+  delegate_to: localhost
+
+- name: Deploy hosts file to the target machine.
+  copy:
+    src: "myhost"
+    dest: /etc/hosts
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: "{{ fmode }}"
+
+- name: CleanUp host on local.
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "myhost"
+    - hfile/node1ip
+    - hfile/node2ip
+    - hfile/node3ip
+  delegate_to: localhost
+
 - name: Install EPEL Repo.
   yum:
     name: ["epel-release", "yum-utils"]
@@ -153,17 +218,17 @@
     state: started
 
 - name: Get Redis node1 IP address.
-  local_action: "copy content='node1ip: {{ ansible_all_ipv4_addresses[1] }}' dest=file/node1ip"
+  local_action: "copy content='node1ip: \"{{ ansible_all_ipv4_addresses[1] }}\"' dest=file/node1ip"
   delegate_to: localhost
   when: inventory_hostname in groups['redis_node1']
 
 - name: Get Redis node2 IP address.
-  local_action: "copy content='node2ip: {{ ansible_all_ipv4_addresses[1] }}' dest=file/node2ip"
+  local_action: "copy content='node2ip: \"{{ ansible_all_ipv4_addresses[1] }}\"' dest=file/node2ip"
   delegate_to: localhost
   when: inventory_hostname in groups['redis_node2']
 
 - name: Get Redis node3 IP address.
-  local_action: "copy content='node3ip: {{ ansible_all_ipv4_addresses[1] }}' dest=file/node3ip"
+  local_action: "copy content='node3ip: \"{{ ansible_all_ipv4_addresses[1] }}\"' dest=file/node3ip"
   delegate_to: localhost
   when: inventory_hostname in groups['redis_node3']
 
@@ -180,7 +245,7 @@
     dest: "roles/redis_cluster/defaults/main.yml"
     owner: "{{ lookup('env', 'USER') }}"
     group: "{{ lookup('env', 'USER') }}"
-    mode: "{{ fmode }}"
+    mode: "0644"
   delegate_to: localhost
 
 - name: cleanUp temp variable.
@@ -194,13 +259,26 @@
     - file/node3ip
   delegate_to: localhost
 
-- name: Create Redis cluster.
-  shell: >
-    redis-cli --cluster create "{{ node1ip }}:{{ master_port }}" "{{ node2ip }}:{{ master_port }}" "{{ node3ip }}:{{ master_port }}" "{{ node1ip }}:{{ slave_port }}" "{{ node2ip }}:{{ slave_port }}" "{{ node3ip }}:{{ slave_port }}" --cluster-replicas 1 > redis_cluster.log
-  register: redis_cluster
-  args:
-    executable: /bin/bash
-    creates: redis_cluster.log
+- name: Create redis cluster.
+  expect:
+    command: "redis-cli --cluster create {{ node1ip }}:{{ master_port }} {{ node2ip }}:{{ master_port }} {{ node3ip }}:{{ master_port }} {{ node1ip }}:{{ slave_port }} {{ node2ip }}:{{ slave_port }} {{ node3ip }}:{{ slave_port }} --cluster-replicas 1"
+    responses:
+      "Can I set the above configuration? \(type 'yes' to accept\):": "yes"
+    timeout: 300
+  when: inventory_hostname in groups['redis_node1']
 
-- debug:
-    msg: "{{ redis_cluster.stdout }}"
+- name: Checking master status.
+  command: "{{ item }}"
+  loop:
+    - "redis-cli {{ node1ip }}:{{ master_port }} cluster nodes"
+    - "redis-cli {{ node2ip }}:{{ master_port }} cluster nodes"
+    - "redis-cli {{ node3ip }}:{{ master_port }} cluster nodes"
+  when: inventory_hostname in groups['redis_cluster']
+
+- name: Checking slave status.
+  command: "{{ item }}"
+  loop:
+    - "redis-cli {{ node1ip }}:{{ slave_port }} cluster nodes"
+    - "redis-cli {{ node2ip }}:{{ slave_port }} cluster nodes"
+    - "redis-cli {{ node3ip }}:{{ slave_port }} cluster nodes"
+  when: inventory_hostname in groups['redis_cluster']
