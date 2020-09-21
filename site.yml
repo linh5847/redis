@@ -5,4 +5,4 @@
   become: true
 
   roles:
-    - { role: redis_cluster, tags: redis_cluster }
+  - { role: redis_cluster, tags: redis_cluster }
